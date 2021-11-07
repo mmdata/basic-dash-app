@@ -1,6 +1,6 @@
 ## Intro
 
-Basic Dash app to predict sentiment. It is NOT ready for actual use!
+Basic Dash app to predict sentiment. It is NOT ready for actual production use!
 To run localy:
 - `python3 -m venv env`
 - `source env/bin/activate`

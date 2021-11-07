@@ -9,18 +9,10 @@ from dash import html
 from dash import dcc
 from dash import dash_table
 import dash_auth
-from predict import predict_svm
+from services.predict import predict_svm
 import pandas as pd
-
-# Keep this out of source code repository - save in a file or a database
-VALID_USERNAME_PASSWORD_PAIRS = {
-    'hello': 'world'
-}
-
-ALLOWED_TYPES = (
-    "text", "number", "password", "email", "search",
-    "tel", "url", "range", "hidden",
-)
+from services.secret_service import secret_service
+from components.parse_contents import parse_contents
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
@@ -31,8 +23,7 @@ server = app.server
 
 auth = dash_auth.BasicAuth(
     app,
-    VALID_USERNAME_PASSWORD_PAIRS
-)
+    secret_service())
 
 
 app.layout = html.Div([
@@ -69,54 +60,6 @@ app.layout = html.Div([
     html.Div(id='output-data-upload')
 ])
 
-def parse_contents(contents, filename, date):
-    content_type, content_string = contents.split(',')
-
-    decoded = base64.b64decode(content_string)
-    try:
-        if 'csv' in filename:
-            # Assume that the user uploaded a CSV file
-            df = pd.read_csv(
-                io.StringIO(decoded.decode('utf-8')))
-            df['sentiment']="Neutral"
-            for i in range(len(df)):
-                try:
-                    df.loc[i,'sentiment'] = predict_svm(df.loc[i, "Comment"])
-                except:
-                    df.loc[i,'sentiment'] = "Something went wrong with the prediction"
-
-            df['new_column'] = 12
-            global_df = df
-        elif 'xls' in filename:
-            # Assume that the user uploaded an excel file
-            df = pd.read_excel(io.BytesIO(decoded))
-            df['new_column'] = 12
-            global_df = df
-    except Exception as e:
-        print(e)
-        return html.Div([
-            'There was an error processing this file.'
-        ])
-
-    return html.Div([
-        html.H5(filename),
-        html.H6(datetime.datetime.fromtimestamp(date)),
-
-        dash_table.DataTable(
-            data=df.to_dict('records'),
-            columns=[{'name': i, 'id': i} for i in df.columns],
-            export_format="csv"
-        ),
-
-        html.Hr(),  # horizontal line
-
-        # For debugging, display the raw contents provided by the web browser
-        #html.Div('Raw Content'),
-        #html.Pre(contents[0:200] + '...', style={
-        #    'whiteSpace': 'pre-wrap',
-        #    'wordBreak': 'break-all'
-        #})
-    ])
 
 
 @app.callback(
